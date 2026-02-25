@@ -1,0 +1,68 @@
+[tool.poetry]
+name = "cs48000_assignments"
+version = "0.1.0"
+description = "A data integration and validation project for production, quality, and shipping records."
+authors = ["celin <your-email@example.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.10,<3.14"
+# Add core dependencies
+ruff = "^0.15.2"
+mypy = "^1.19.1"
+pytest-cov = "^7.0.0"
+pre-commit = "^4.5.1"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.urls]
+"Documentation" = "docs/"
+
+[[tool.poetry.packages]]
+# src is the main package directory
+include = "src"
+
+[tool.poetry.scripts]
+main = "main:main"
+
+[tool.ruff]
+line-length = 88  # same as black default
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes: undefined names, unused imports, etc.
+    "I",   # isort: import ordering
+    "B",   # flake8-bugbear: common bug patterns
+    "UP",  # pyupgrade: use modern Python syntax
+]
+ignore = [
+    "E501",  # line too long - handled by formatter, not linter
+    "B008",  # do not perform function call in default args (common in FastAPI/Streamlit)
+]
+
+# files/dirs to skip
+exclude = [
+    ".venv",
+    "__pycache__",
+    "migrations",
+    "alembic",
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app", "core", "utils", "services"]  # your own modules
+
+[tool.ruff.format]
+quote-style = "double"        # consistent with black
+indent-style = "space"
+
+[tool.mypy]
+strict = true
+disable_error_code = ["empty-body"]
+skip-magic-trailing-comma = false
+
