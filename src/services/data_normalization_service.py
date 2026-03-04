@@ -3,6 +3,8 @@
 from datetime import date
 from typing import Any
 
+from dateutil import parser
+
 
 class DataNormalizationService:
     """Service for normalizing data from different sources."""
@@ -28,6 +30,20 @@ class DataNormalizationService:
         for record in raw_records:
             normalized_record = self._trim_whitespace(record)
             normalized_record = self._remove_leading_zeros(normalized_record)
+            if "production_date" in normalized_record:
+                normalized_record["production_date"] = self._standardize_date(
+                    normalized_record["production_date"]
+                )
+            if "date" in normalized_record:
+                normalized_record["date"] = self._standardize_date(
+                    normalized_record["date"]
+                )
+            if "lot_code" in normalized_record and isinstance(
+                normalized_record["lot_code"], str
+            ):
+                normalized_record["lot_code"] = self._standardize_lot_id(
+                    normalized_record["lot_code"]
+                )
             normalized.append(normalized_record)
         return normalized
 
@@ -52,6 +68,16 @@ class DataNormalizationService:
         for record in raw_records:
             normalized_record = self._trim_whitespace(record)
             normalized_record = self._remove_leading_zeros(normalized_record)
+            if "inspection_date" in normalized_record:
+                normalized_record["inspection_date"] = self._standardize_date(
+                    normalized_record["inspection_date"]
+                )
+            if "lot_code" in normalized_record and isinstance(
+                normalized_record["lot_code"], str
+            ):
+                normalized_record["lot_code"] = self._standardize_lot_id(
+                    normalized_record["lot_code"]
+                )
             normalized.append(normalized_record)
         return normalized
 
@@ -76,6 +102,16 @@ class DataNormalizationService:
         for record in raw_records:
             normalized_record = self._trim_whitespace(record)
             normalized_record = self._remove_leading_zeros(normalized_record)
+            if "ship_date" in normalized_record:
+                normalized_record["ship_date"] = self._standardize_date(
+                    normalized_record["ship_date"]
+                )
+            if "lot_code" in normalized_record and isinstance(
+                normalized_record["lot_code"], str
+            ):
+                normalized_record["lot_code"] = self._standardize_lot_id(
+                    normalized_record["lot_code"]
+                )
             normalized.append(normalized_record)
         return normalized
 
@@ -106,14 +142,35 @@ class DataNormalizationService:
 
     def _standardize_date(self, date_value: Any) -> date:
         """Convert various date formats to standard YYYY-MM-DD format."""
-        ...
+        if isinstance(date_value, date):
+            return date_value
+        if date_value is None:
+            raise ValueError("Date value cannot be None")
+        parsed = parser.parse(str(date_value), dayfirst=False, yearfirst=False)
+        return date(parsed.year, parsed.month, parsed.day)
 
     def _standardize_lot_id(self, lot_id: str) -> str:
         """Standardize lot ID (trim and remove leading zeros)."""
-        ...
+        cleaned = lot_id.strip()
+        if cleaned.isdigit():
+            return cleaned.lstrip("0") or "0"
+        return cleaned
 
     def validate_normalized_record(
         self, record: dict[str, Any], record_type: str
     ) -> bool:
         """Validate that normalized record has required fields."""
-        ...
+        required_fields: dict[str, set[str]] = {
+            "production": {"lot_code", "production_line_id"},
+            "quality": {"lot_code", "inspection_date"},
+            "shipping": {"lot_code", "ship_date"},
+        }
+        fields = required_fields.get(record_type.lower())
+        if fields is None:
+            return False
+        for field in fields:
+            if field not in record:
+                return False
+            if record[field] in (None, ""):
+                return False
+        return True

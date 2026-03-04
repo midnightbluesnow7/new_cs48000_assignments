@@ -23,20 +23,20 @@ class DataSource:
 
     def mark_healthy(self) -> None:
         """Mark data source as healthy."""
-        ...
+        self.refresh_status = "Healthy"
 
     def mark_stale(self) -> None:
         """Mark data source as stale."""
-        ...
+        self.refresh_status = "Stale"
 
     def mark_error(self) -> None:
         """Mark data source as having an error."""
-        ...
+        self.refresh_status = "Error"
 
     def update_timestamp(self, timestamp: datetime) -> None:
         """Update the last updated timestamp."""
-        ...
+        self.last_updated_timestamp = timestamp
 
     def is_healthy(self) -> bool:
         """Check if data source is healthy."""
-        ...
+        return self.refresh_status == "Healthy"

@@ -24,16 +24,17 @@ class Lot:
 
     def get_composite_key(self) -> tuple[str, date]:
         """Get the composite key (lot_code, production_date)."""
-        ...
+        return (self.lot_code, self.production_date)
 
     def mark_pending_inspection(self) -> None:
         """Mark this lot as pending inspection."""
-        ...
+        self.is_pending_inspection = True
 
     def flag_data_integrity_issue(self) -> None:
         """Flag that this lot has a data integrity issue."""
-        ...
+        self.has_data_integrity_issue = True
 
     def flag_date_conflict(self) -> None:
         """Flag that this lot has a date conflict."""
-        ...
+        self.has_date_conflict = True
+        self.has_data_integrity_issue = True

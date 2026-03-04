@@ -26,12 +26,21 @@ class ProductionRecord:
 
     def get_line_error_rate(self) -> float:
         """Calculate error rate for production line."""
-        ...
+        if self.units_planned <= 0:
+            return 0.0
+        shortfall = max(self.units_planned - self.units_actual, 0)
+        return shortfall / self.units_planned
 
     def is_valid(self) -> bool:
         """Validate production record constraints."""
-        ...
+        if not self.production_line_id or not self.shift:
+            return False
+        if self.units_planned < 0 or self.units_actual < 0:
+            return False
+        if self.downtime_minutes < 0:
+            return False
+        return True
 
     def mark_line_issue(self) -> None:
         """Mark that this production line has an issue."""
-        ...
+        self.has_line_issue = True
