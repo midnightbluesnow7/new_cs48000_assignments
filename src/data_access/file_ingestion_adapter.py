@@ -1,6 +1,14 @@
 """File Ingestion Adapter for reading from XLSX and CSV files."""
 
-from typing import Any
+from datetime import datetime
+from pathlib import Path
+from typing import Any, cast
+
+import pandas as pd
+
+
+class FileIngestionError(RuntimeError):
+    """Raised when ingestion fails due to missing or invalid files."""
 
 
 class FileIngestionAdapter:
@@ -24,7 +32,12 @@ class FileIngestionAdapter:
         Returns:
             List of dictionaries representing production records
         """
-        ...
+        file_path = Path(self.source_location)
+        if self.file_format == "CSV":
+            return self._read_csv_file(str(file_path))
+        if self.file_format == "XLSX":
+            return self._read_xlsx_file(str(file_path))
+        raise FileIngestionError(f"Unsupported format: {self.file_format}")
 
     def read_quality_logs(self) -> list[dict[str, Any]]:
         """
@@ -33,7 +46,12 @@ class FileIngestionAdapter:
         Returns:
             List of dictionaries representing quality records
         """
-        ...
+        file_path = Path(self.source_location)
+        if self.file_format == "CSV":
+            return self._read_csv_file(str(file_path))
+        if self.file_format == "XLSX":
+            return self._read_xlsx_file(str(file_path))
+        raise FileIngestionError(f"Unsupported format: {self.file_format}")
 
     def read_shipping_logs(self) -> list[dict[str, Any]]:
         """
@@ -42,7 +60,12 @@ class FileIngestionAdapter:
         Returns:
             List of dictionaries representing shipping records
         """
-        ...
+        file_path = Path(self.source_location)
+        if self.file_format == "CSV":
+            return self._read_csv_file(str(file_path))
+        if self.file_format == "XLSX":
+            return self._read_xlsx_file(str(file_path))
+        raise FileIngestionError(f"Unsupported format: {self.file_format}")
 
     def _read_xlsx_file(
         self, file_path: str, sheet_name: str | None = None
@@ -57,7 +80,22 @@ class FileIngestionAdapter:
         Returns:
             List of rows as dictionaries
         """
-        ...
+        path = Path(file_path)
+        if not path.exists():
+            raise FileIngestionError(f"File not found: {file_path}")
+        frame = pd.read_excel(path, sheet_name=sheet_name)
+        if isinstance(frame, dict):
+            # pandas returns dict when sheet_name=None for all sheets; flatten rows.
+            rows: list[dict[str, Any]] = []
+            for data in frame.values():
+                rows.extend(
+                    data.where(pd.notna(data), None).to_dict("records")  # type: ignore[arg-type]
+                )
+            return rows
+        return cast(
+            list[dict[str, Any]],
+            frame.where(pd.notna(frame), None).to_dict("records"),  # type: ignore[arg-type]
+        )
 
     def _read_csv_file(self, file_path: str) -> list[dict[str, Any]]:
         """
@@ -69,12 +107,22 @@ class FileIngestionAdapter:
         Returns:
             List of rows as dictionaries
         """
-        ...
+        path = Path(file_path)
+        if not path.exists():
+            raise FileIngestionError(f"File not found: {file_path}")
+        frame = pd.read_csv(path)
+        return cast(
+            list[dict[str, Any]],
+            frame.where(pd.notna(frame), None).to_dict("records"),  # type: ignore[arg-type]
+        )
 
     def validate_file_exists(self) -> bool:
         """Validate that the file or directory exists."""
-        ...
+        return Path(self.source_location).exists()
 
     def get_file_modification_time(self, file_path: str) -> str:
         """Get the file modification time."""
-        ...
+        path = Path(file_path)
+        if not path.exists():
+            raise FileIngestionError(f"File not found: {file_path}")
+        return datetime.fromtimestamp(path.stat().st_mtime).isoformat()

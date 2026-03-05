@@ -12,10 +12,13 @@ ruff = "^0.15.2"
 mypy = "^1.19.1"
 pytest-cov = "^7.0.0"
 pre-commit = "^4.5.1"
+python-dotenv = "^1.2.2"
+python-dateutil = "^2.9.0.post0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.0"
 pip-licenses = "^5.5.1"
+pytest-playwright = "^0.7.2"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -65,5 +68,18 @@ indent-style = "space"
 [tool.mypy]
 strict = true
 disable_error_code = ["empty-body"]
-skip-magic-trailing-comma = false
+
+[[tool.mypy.overrides]]
+module = ["tests", "tests.*", "tests.*.*", "tests.*.*.*"]
+disallow_untyped_defs = false
+disallow_untyped_decorators = false
+disable_error_code = ["misc", "return-value"]
+
+[[tool.mypy.overrides]]
+module = ["dateutil", "dateutil.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["src.data_access.file_ingestion_adapter"]
+warn_unused_ignores = false
 

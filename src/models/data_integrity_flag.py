@@ -27,12 +27,13 @@ class DataIntegrityFlag:
 
     def resolve(self) -> None:
         """Mark this flag as resolved."""
-        ...
+        self.is_resolved = True
 
     def get_severity_level(self) -> int:
         """Get numeric severity level (1=Warning, 2=Error, 3=Critical)."""
-        ...
+        mapping = {"Warning": 1, "Error": 2, "Critical": 3}
+        return mapping.get(self.severity, 1)
 
     def is_critical(self) -> bool:
         """Check if this flag is critical."""
-        ...
+        return self.severity == "Critical"

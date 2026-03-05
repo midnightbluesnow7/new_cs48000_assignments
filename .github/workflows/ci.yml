@@ -189,7 +189,18 @@ jobs:
 
 
       # ------------------------------------------------------
-      # Step 8: Run pre-commit
+      # Step 8: Install Playwright browsers
+      # ------------------------------------------------------
+      # Must happen BEFORE pre-commit runs, because the pytest
+      # hook inside pre-commit launches Chromium via Playwright.
+      # If the browser binary is missing at that point, CI errors
+      # with "Executable doesn't exist".
+      - name: Install Playwright browsers
+        run: poetry run playwright install --with-deps chromium
+
+
+      # ------------------------------------------------------
+      # Step 9: Run pre-commit
       # ------------------------------------------------------
       - name: Run pre-commit on all files
 
