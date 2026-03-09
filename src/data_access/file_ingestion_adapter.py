@@ -1,10 +1,13 @@
 """File Ingestion Adapter for reading from XLSX and CSV files."""
 
+import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Any, cast
 
 import pandas as pd
+
+logger = logging.getLogger(__name__)
 
 
 class FileIngestionError(RuntimeError):
@@ -82,6 +85,7 @@ class FileIngestionAdapter:
         """
         path = Path(file_path)
         if not path.exists():
+            logger.error("File not found: %s", file_path)
             raise FileIngestionError(f"File not found: {file_path}")
         frame = pd.read_excel(path, sheet_name=sheet_name)
         if isinstance(frame, dict):
@@ -91,11 +95,14 @@ class FileIngestionAdapter:
                 rows.extend(
                     data.where(pd.notna(data), None).to_dict("records")  # type: ignore[arg-type]
                 )
+            logger.info("Read %d rows from XLSX file: %s", len(rows), file_path)
             return rows
-        return cast(
+        rows = cast(
             list[dict[str, Any]],
             frame.where(pd.notna(frame), None).to_dict("records"),  # type: ignore[arg-type]
         )
+        logger.info("Read %d rows from XLSX file: %s", len(rows), file_path)
+        return rows
 
     def _read_csv_file(self, file_path: str) -> list[dict[str, Any]]:
         """
@@ -109,12 +116,15 @@ class FileIngestionAdapter:
         """
         path = Path(file_path)
         if not path.exists():
+            logger.error("File not found: %s", file_path)
             raise FileIngestionError(f"File not found: {file_path}")
         frame = pd.read_csv(path)
-        return cast(
+        rows = cast(
             list[dict[str, Any]],
             frame.where(pd.notna(frame), None).to_dict("records"),  # type: ignore[arg-type]
         )
+        logger.info("Read %d rows from CSV file: %s", len(rows), file_path)
+        return rows
 
     def validate_file_exists(self) -> bool:
         """Validate that the file or directory exists."""

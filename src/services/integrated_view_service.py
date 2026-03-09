@@ -1,10 +1,13 @@
 """Integrated View Service for generating operational reports."""
 
+import logging
 from collections import defaultdict
 from datetime import date
 from typing import Any
 
 from src.models.lot import Lot
+
+logger = logging.getLogger(__name__)
 
 
 class IntegratedViewService:
@@ -84,7 +87,13 @@ class IntegratedViewService:
         Returns:
             Dictionary mapping defect type to list of trend data points
         """
+        logger.info(
+            "Running recurring defect analysis: start_date=%s end_date=%s",
+            start_date,
+            end_date,
+        )
         trend: dict[str, dict[date, int]] = defaultdict(lambda: defaultdict(int))
+        inspection_count = 0
 
         for record in self.integrated_records:
             quality = record.get("quality")
@@ -93,6 +102,9 @@ class IntegratedViewService:
             if start_date <= quality.inspection_date <= end_date:
                 defect = quality.defect_type or "Unspecified"
                 trend[defect][quality.inspection_date] += max(quality.defect_count, 0)
+                inspection_count += 1
+
+        logger.info("Number of inspections analyzed: %d", inspection_count)
 
         response: dict[str, list[dict[str, Any]]] = {}
         for defect_type, points in trend.items():
@@ -100,6 +112,31 @@ class IntegratedViewService:
                 {"date": point_date, "defect_count": count}
                 for point_date, count in sorted(points.items())
             ]
+
+        total_defects = sum(
+            point["defect_count"] for pts in response.values() for point in pts
+        )
+        logger.info(
+            "Recurring defect analysis complete: defect_types=%d total_defects=%d",
+            len(response),
+            total_defects,
+        )
+
+        for defect_type, pts in response.items():
+            type_total = sum(p["defect_count"] for p in pts)
+            if type_total > 50:
+                logger.warning(
+                    "Suspicious defect pattern detected: defect_type=%s total_count=%d",
+                    defect_type,
+                    type_total,
+                )
+
+        if len(response) > 50:
+            logger.warning(
+                "Very large query result in recurring defect analysis: %d defect types returned",
+                len(response),
+            )
+
         return response
 
     def search_lot_status(self, lot_code: str) -> dict[str, Any] | None:

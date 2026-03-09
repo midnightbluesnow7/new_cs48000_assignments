@@ -1,10 +1,13 @@
 """Production Data Access Layer."""
 
+import logging
 from copy import deepcopy
 from datetime import date
 
 from src.data_access.base import BaseDataAccess
 from src.models.production_record import ProductionRecord
+
+logger = logging.getLogger(__name__)
 
 
 class ProductionDataAccess(BaseDataAccess):
@@ -21,6 +24,12 @@ class ProductionDataAccess(BaseDataAccess):
         self._next_id += 1
         production_record.id = record_id
         self._records[record_id] = deepcopy(production_record)
+        logger.info(
+            "Production record created: id=%d lot_id=%d production_line_id=%s",
+            record_id,
+            production_record.lot_id,
+            production_record.production_line_id,
+        )
         return record_id
 
     def read_by_id(self, record_id: int) -> ProductionRecord | None:
@@ -55,6 +64,11 @@ class ProductionDataAccess(BaseDataAccess):
         if production_record.id not in self._records:
             return False
         self._records[production_record.id] = deepcopy(production_record)
+        logger.info(
+            "Production record updated: id=%d lot_id=%d",
+            production_record.id,
+            production_record.lot_id,
+        )
         return True
 
     def delete(self, record_id: int) -> bool:
@@ -63,7 +77,13 @@ class ProductionDataAccess(BaseDataAccess):
 
     def read_all(self) -> list[ProductionRecord]:
         """Read all production records."""
-        return [deepcopy(record) for record in self._records.values()]
+        records = [deepcopy(record) for record in self._records.values()]
+        logger.info("Queried all production records: count=%d", len(records))
+        if len(records) > 500:
+            logger.warning(
+                "Very large query result for production records: count=%d", len(records)
+            )
+        return records
 
     def get_records_by_production_line(
         self, production_line_id: str
