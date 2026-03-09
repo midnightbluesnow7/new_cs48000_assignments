@@ -1,5 +1,6 @@
 """Streamlit Dashboard - Main UI application."""
 
+import logging
 from datetime import date
 from typing import cast
 
@@ -13,6 +14,8 @@ from src.presentation.widgets import (
     SourceHealthWidget,
 )
 from src.services.integrated_view_service import IntegratedViewService
+
+logger = logging.getLogger(__name__)
 
 
 class Dashboard:
@@ -86,6 +89,7 @@ class Dashboard:
 
     def render_defect_trending_page(self) -> None:
         """Render Defect Trending page (AC 3.2)."""
+        logger.info("User opened the Recurring Defects page")
         start_date, end_date = self.get_selected_date_range()
         defect_data = self.integrated_view_service.get_defect_trending(
             start_date, end_date

@@ -1,10 +1,13 @@
 """Conflict Resolution Service for handling missing data and inconsistencies."""
 
+import logging
 from datetime import UTC, date, datetime
 from typing import Any
 
 from src.models.data_integrity_flag import DataIntegrityFlag
 from src.models.lot import Lot
+
+logger = logging.getLogger(__name__)
 
 
 class ConflictResolutionService:
@@ -29,8 +32,16 @@ class ConflictResolutionService:
         for record in integrated_records.values():
             lot: Lot = record["lot"]
             if record.get("quality") is None:
+                logger.warning(
+                    "Missing inspection data: lot_code=%s has no quality record",
+                    lot.lot_code,
+                )
                 self.flag_lot_pending_inspection(lot)
                 flags.append(self.create_pending_inspection_flag(lot))
+        if flags:
+            logger.warning(
+                "Missing quality inspection records detected: count=%d", len(flags)
+            )
         return flags
 
     def resolve_missing_shipping_records(
@@ -54,8 +65,17 @@ class ConflictResolutionService:
             has_shipping = record.get("shipping") is not None
             has_quality = record.get("quality") is not None
             if has_shipping and not has_quality:
+                logger.warning(
+                    "Missing inspection data: lot_code=%s has shipping record but no quality record",
+                    lot.lot_code,
+                )
                 lot.flag_data_integrity_issue()
                 flags.append(self.create_missing_quality_flag(lot))
+        if flags:
+            logger.warning(
+                "Lots with shipping but missing quality records detected: count=%d",
+                len(flags),
+            )
         return flags
 
     def flag_lot_pending_inspection(self, lot: Lot) -> None:

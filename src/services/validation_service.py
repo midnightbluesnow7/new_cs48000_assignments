@@ -1,10 +1,13 @@
 """Validation Service for detecting data integrity issues and outliers."""
 
+import logging
 from datetime import UTC, date, datetime
 from typing import Any
 
 from src.models.data_integrity_flag import DataIntegrityFlag
 from src.models.lot import Lot
+
+logger = logging.getLogger(__name__)
 
 
 class ValidationService:
@@ -45,10 +48,20 @@ class ValidationService:
                 ship_date=shipping.ship_date,
             )
             if not is_valid and flag is not None:
+                logger.warning(
+                    "Date conflict detected: lot_code=%s production_date=%s ship_date=%s",
+                    lot.lot_code,
+                    lot.production_date,
+                    shipping.ship_date,
+                )
                 flags.append(flag)
                 lot.flag_date_conflict()
         self._summary["date_conflicts"] = len(flags)
         self._summary["total_flags"] += len(flags)
+        if flags:
+            logger.warning(
+                "Date conflict validation complete: conflicts_detected=%d", len(flags)
+            )
         return flags
 
     def validate_ship_date_after_production_date(

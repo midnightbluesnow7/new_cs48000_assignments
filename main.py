@@ -1,5 +1,7 @@
 """Main entry point for SteelWorks Operations Data Hub."""
 
+import logging
+import logging.handlers
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -44,6 +46,36 @@ def _safe_bool(value: Any) -> bool:
     return str(value).strip().lower() in {"true", "yes", "y", "1", "pass"}
 
 
+_LOG_DIR = Path("logs")
+logger = logging.getLogger(__name__)
+
+
+def configure_logging() -> None:
+    """Configure application-wide logging with a rotating file handler.
+
+    Sets up a single RotatingFileHandler on the root logger so that all
+    modules in the application write to the same log file.  Calling this
+    function more than once is safe – subsequent calls are no-ops.
+    """
+    root = logging.getLogger()
+    if root.handlers:
+        return
+    _LOG_DIR.mkdir(parents=True, exist_ok=True)
+    formatter = logging.Formatter(
+        fmt="%(asctime)s %(levelname)-8s %(module)s %(message)s",
+        datefmt="%Y-%m-%dT%H:%M:%S",
+    )
+    file_handler = logging.handlers.RotatingFileHandler(
+        filename=str(_LOG_DIR / "app.log"),
+        maxBytes=5 * 1024 * 1024,
+        backupCount=3,
+        encoding="utf-8",
+    )
+    file_handler.setFormatter(formatter)
+    root.setLevel(logging.INFO)
+    root.addHandler(file_handler)
+
+
 def main() -> None:
     """
     Main entry point for the application.
@@ -54,6 +86,8 @@ def main() -> None:
     3. Integrated Problem Reporting (AC 3)
     4. Automated Validation & Exception Handling (AC 4)
     """
+    configure_logging()
+    logger.info("Application startup")
     initialize_database()
     trigger_data_ingestion_and_integration()
     start_dashboard()
@@ -64,6 +98,7 @@ def initialize_database() -> None:
     metadata_access = DataSourceMetadataAccess()
     now = datetime.now(UTC)
     if not metadata_access.read_all():
+        logger.info("Initializing data source metadata records")
         metadata_access.create(
             DataSource(
                 source_name=Config.PRODUCTION_LOGS_SOURCE_NAME,
@@ -89,6 +124,7 @@ def initialize_database() -> None:
                 last_updated_timestamp=now,
             )
         )
+        logger.info("Data source metadata records created")
     st.session_state["source_metadata_access"] = metadata_access
 
 
@@ -120,14 +156,30 @@ def trigger_data_ingestion_and_integration() -> None:
         production_rows = FileIngestionAdapter(
             source_location=str(production_path), file_format="XLSX"
         ).read_production_logs()
+        logger.info(
+            "Ingested production log: rows=%d source=%s",
+            len(production_rows),
+            production_path,
+        )
     except FileIngestionError:
+        logger.warning(
+            "Missing inspection data: production log not found at %s", production_path
+        )
         production_rows = []
 
     try:
         shipping_rows = FileIngestionAdapter(
             source_location=str(shipping_path), file_format="XLSX"
         ).read_shipping_logs()
+        logger.info(
+            "Ingested shipping log: rows=%d source=%s",
+            len(shipping_rows),
+            shipping_path,
+        )
     except FileIngestionError:
+        logger.warning(
+            "Missing inspection data: shipping log not found at %s", shipping_path
+        )
         shipping_rows = []
 
     if quality_path.exists():
@@ -135,8 +187,20 @@ def trigger_data_ingestion_and_integration() -> None:
             quality_rows = FileIngestionAdapter(
                 source_location=str(quality_path), file_format="XLSX"
             ).read_quality_logs()
+            logger.info(
+                "Ingested quality log: rows=%d source=%s",
+                len(quality_rows),
+                quality_path,
+            )
         except FileIngestionError:
+            logger.warning(
+                "Missing inspection data: quality log unreadable at %s", quality_path
+            )
             quality_rows = []
+    else:
+        logger.warning(
+            "Missing inspection data: quality log file not found at %s", quality_path
+        )
 
     normalized_production = normalizer.normalize_production_data(
         [
@@ -243,8 +307,17 @@ def trigger_data_ingestion_and_integration() -> None:
         if normalizer.validate_normalized_record(record, "shipping")
     ]
 
+    logger.info(
+        "Records prepared for integration: production=%d quality=%d shipping=%d",
+        len(production_records),
+        len(quality_records),
+        len(shipping_records),
+    )
     integrated_records = integration_service.integrate_all_sources(
         production_records, quality_records, shipping_records
+    )
+    logger.info(
+        "Data integration complete: integrated_records=%d", len(integrated_records)
     )
 
     integrated_by_key = {
@@ -256,6 +329,12 @@ def trigger_data_ingestion_and_integration() -> None:
         integrated_by_key
     )
     date_conflict_flags = validation_service.detect_date_conflicts(integrated_by_key)
+    logger.info(
+        "Integrity analysis complete: pending_inspection=%d missing_quality=%d date_conflicts=%d",
+        len(pending_flags),
+        len(missing_quality_flags),
+        len(date_conflict_flags),
+    )
 
     st.session_state["integrated_records"] = list(integrated_by_key.values())
     st.session_state["integrity_flags"] = [
@@ -294,6 +373,7 @@ def trigger_data_ingestion_and_integration() -> None:
 
 def start_dashboard() -> None:
     """Start the Streamlit dashboard."""
+    logger.info("Starting Streamlit dashboard")
     Dashboard().run()
 
 
