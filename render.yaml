@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: steelworks-ops-hub
+    runtime: docker
+    healthCheckPath: /_stcore/health
+    envVars:
+      - key: STREAMLIT_SERVER_HEADLESS
+        value: "true"
+      - key: STREAMLIT_SERVER_ADDRESS
+        value: "0.0.0.0"
+      - key: STREAMLIT_SERVER_PORT
+        value: "8501"
+      - key: DATABASE_URL
+        sync: false
+      - key: SENTRY_DSN
+        sync: false

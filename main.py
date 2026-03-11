@@ -88,13 +88,8 @@ def main() -> None:
     3. Integrated Problem Reporting (AC 3)
     4. Automated Validation & Exception Handling (AC 4)
     """
-    configure_logging()
-    logger.info("Application startup")
-    initialize_database()
-    trigger_data_ingestion_and_integration()
-    start_dashboard()
-
     load_dotenv()
+    configure_logging()
 
     import sentry_sdk
 
@@ -105,6 +100,11 @@ def main() -> None:
         traces_sample_rate=0.0,
         enable_logs=False,
     )
+
+    logger.info("Application startup")
+    initialize_database()
+    trigger_data_ingestion_and_integration()
+    start_dashboard()
 
 
 def initialize_database() -> None:
