@@ -16,11 +16,17 @@ WORKDIR /app
 # ── System dependencies ────────────────────────────────────────────────────────
 # curl: used by the official Poetry installer
 # libpq-dev + gcc: required to build/link psycopg2
+# nginx: reverse proxy that converts HEAD → GET for health-check monitors
 RUN apt-get update && apt-get install -y --no-install-recommends \
         curl \
         libpq-dev \
         gcc \
-    && rm -rf /var/lib/apt/lists/*
+        nginx \
+    && rm -rf /var/lib/apt/lists/* \
+    # Remove the default site so only our config is active.
+    && rm -f /etc/nginx/sites-enabled/default \
+    # Drop the 'user' directive so nginx runs as whoever launched the container.
+    && sed -i '/^user /d' /etc/nginx/nginx.conf
 
 # ── Install Poetry ─────────────────────────────────────────────────────────────
 RUN curl -sSL https://install.python-poetry.org | python3 - \
@@ -36,6 +42,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY pyproject.toml poetry.lock ./
 RUN poetry install --without dev --no-root
 
+# ── nginx reverse-proxy config ────────────────────────────────────────────────
+COPY nginx/steelworks.conf /etc/nginx/conf.d/steelworks.conf
+
+# ── Container startup script ──────────────────────────────────────────────────
+COPY start.sh ./
+RUN chmod +x start.sh
+
 # ── Copy application source ────────────────────────────────────────────────────
 COPY . .
 
@@ -45,9 +58,9 @@ RUN mkdir -p data/production_logs data/quality_logs data/shipping_logs logs
 # Streamlit listens on 8501 by default
 EXPOSE 8501
 
-# Override Streamlit defaults so the app is reachable inside Docker
-ENV STREAMLIT_SERVER_ADDRESS=0.0.0.0 \
-    STREAMLIT_SERVER_PORT=8501 \
+# Streamlit listens on 8502 (loopback only); nginx proxies 8501 → 8502.
+ENV STREAMLIT_SERVER_ADDRESS=127.0.0.1 \
+    STREAMLIT_SERVER_PORT=8502 \
     STREAMLIT_SERVER_HEADLESS=true \
     STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
 
@@ -57,4 +70,4 @@ ENV DATABASE_URL=postgresql://postgres:password@db:5432/steelworks_ops
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health')"
 
-ENTRYPOINT ["streamlit", "run", "main.py", "--server.port=8501", "--server.address=0.0.0.0"]
+ENTRYPOINT ["./start.sh"]
