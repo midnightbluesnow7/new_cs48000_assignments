@@ -1,0 +1,51 @@
+# ── Version control ───────────────────────────────────────────────────────────
+.git/
+.gitignore
+.gitattributes
+
+# ── Python byte-code & caches ─────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ── Virtual environments ──────────────────────────────────────────────────────
+# The Dockerfile uses POETRY_VIRTUALENVS_CREATE=false so no venv is created,
+# but exclude any local venv that may exist on the host.
+.venv/
+venv/
+env/
+
+# ── Environment & secrets ─────────────────────────────────────────────────────
+# Never bake secrets into an image; pass them in at runtime via -e / --env-file.
+.env
+.env.*
+!.env.example
+
+# ── Logs & runtime-generated files ───────────────────────────────────────────
+logs/
+*.log
+
+# ── Tests ─────────────────────────────────────────────────────────────────────
+# Test files are not needed at runtime; keep the image lean.
+tests/
+
+# ── Build & packaging artefacts ───────────────────────────────────────────────
+dist/
+build/
+*.egg-info/
+
+# ── Docker files themselves ───────────────────────────────────────────────────
+Dockerfile
+.dockerignore
+
+# ── Editor & OS noise ─────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+

@@ -2,11 +2,13 @@
 
 import logging
 import logging.handlers
+import os
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 import streamlit as st
+from dotenv import load_dotenv
 
 from config import Config
 from src.data_access.data_source_metadata_access import DataSourceMetadataAccess
@@ -91,6 +93,18 @@ def main() -> None:
     initialize_database()
     trigger_data_ingestion_and_integration()
     start_dashboard()
+
+    load_dotenv()
+
+    import sentry_sdk
+
+    # Configure Sentry for error monitoring
+    sentry_sdk.init(
+        dsn=os.getenv("SENTRY_DSN"),
+        send_default_pii=False,
+        traces_sample_rate=0.0,
+        enable_logs=False,
+    )
 
 
 def initialize_database() -> None:
