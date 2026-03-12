@@ -1,0 +1,45 @@
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Test artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Logs
+logs/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Docs and non-runtime files
+docs/
+tests/
+README.md
+SCAFFOLDING_GUIDE.md
+SCAFFOLDING_SUMMARY.md
+pyproject.toml
+
+# Environment files (secrets must not go into the image)
+.env
+*.env
