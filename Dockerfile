@@ -34,7 +34,7 @@ RUN curl -sSL https://install.python-poetry.org | python3 - \
 
 # ── Install Python dependencies (pip / requirements.txt) ──────────────────────
 COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --root-user-action=ignore -r requirements.txt
 
 # ── Install project dependencies via Poetry ────────────────────────────────────
 # Copy only the dependency manifests first so Docker can cache this layer
