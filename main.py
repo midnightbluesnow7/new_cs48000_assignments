@@ -2,11 +2,14 @@
 
 import logging
 import logging.handlers
+import os
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+import sentry_sdk
 import streamlit as st
+from dotenv import load_dotenv
 
 from config import Config
 from src.data_access.data_source_metadata_access import DataSourceMetadataAccess
@@ -86,6 +89,15 @@ def main() -> None:
     3. Integrated Problem Reporting (AC 3)
     4. Automated Validation & Exception Handling (AC 4)
     """
+    load_dotenv()
+
+    sentry_sdk.init(
+        dsn=os.getenv("SENTRY_DSN"),
+        send_default_pii=False,
+        traces_sample_rate=0.0,
+        enable_logs=False,
+    )
+
     configure_logging()
     logger.info("Application startup")
     initialize_database()
