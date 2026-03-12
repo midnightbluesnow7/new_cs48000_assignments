@@ -47,7 +47,7 @@ COPY nginx/steelworks.conf /etc/nginx/conf.d/steelworks.conf
 
 # ── Container startup script ──────────────────────────────────────────────────
 COPY start.sh ./
-RUN chmod +x start.sh
+RUN sed -i 's/\r//' start.sh && chmod +x start.sh
 
 # ── Copy application source ────────────────────────────────────────────────────
 COPY . .
