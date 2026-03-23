@@ -53,6 +53,7 @@ class Dashboard:
     def render_header(self) -> None:
         """Render dashboard header and title."""
         st.title("SteelWorks Operations Data Hub")
+        st.title("CD Test")
         st.caption("Integrated production, quality, and shipping analytics")
 
     def render_navigation(self) -> str:
